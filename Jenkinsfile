@@ -7,12 +7,11 @@ def container = 'wayshub-fe'
 
 pipeline {
     agent any
-
     stages {
-        stage('Pulling New Code') {
-            steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+        stage ('pulling new code'){
+            steps{
+                sshagent([secret]){
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
                     cd ${directory}
                     git pull origin ${branch}
                     exit
@@ -20,32 +19,21 @@ pipeline {
                 }
             }
         }
-
-        stage('Build Docker Image on Server') {
-            steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+        stage ('Build Process'){
+            steps{
+                sshagent([secret]){
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
                     cd ${directory}
-                    docker build -t ${images} .
+                    docker build --no-cache -t ${image} .
                     exit
                     EOF"""
                 }
             }
         }
-
-        stage('Push to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
-                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
-                    sh "docker push ${images}"
-                }
-            }
-        }
-
-        stage('Deploy with Docker Compose') {
-            steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+        stage ('Deploy'){
+            steps{
+                sshagent([secret]){
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
                     cd ${directory}
                     docker compose down
                     docker compose up -d
@@ -55,6 +43,57 @@ pipeline {
             }
         }
     }
+
+#pipeline {
+#    agent any
+
+#    stages {
+#        stage('Pulling New Code') {
+#            steps {
+#                sshagent(credentials: ["${secret}"]) {
+#                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+#                    cd ${directory}
+#                    git pull origin ${branch}
+#                    exit
+#                    EOF"""
+#                }
+#            }
+#        }
+
+#        stage('Build Docker Image on Server') {
+#            steps {
+#                sshagent(credentials: ["${secret}"]) {
+#                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+#                    cd ${directory}
+#                    docker build -t ${images} .
+#                    exit
+#                    EOF"""
+#                }
+#            }
+#        }
+
+#        stage('Push to Docker Hub') {
+#            steps {
+#                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
+#                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+#                    sh "docker push ${images}"
+#                }
+#            }
+#        }
+
+#        stage('Deploy with Docker Compose') {
+#            steps {
+#                sshagent(credentials: ["${secret}"]) {
+#                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
+#                    cd ${directory}
+#                    docker compose down
+#                    docker compose up -d
+#                    exit
+#                    EOF"""
+#                }
+#            }
+#        }
+#    }
 
     post {
         success {
