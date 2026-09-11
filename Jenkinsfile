@@ -43,7 +43,7 @@ pipeline {
             }
         }
     }
-
+}
 #pipeline {
 #    agent any
 
@@ -109,5 +109,5 @@ pipeline {
                         title: 'Jenkins Deployment Failed'
         }
     }
-}
-}
+
+
