@@ -1,5 +1,5 @@
 def secret = 'adiwijaya_ky'
-def server = 'adi@54.251.210.57'
+def server = 'jenkins@54.251.210.57'
 def directory = 'wayshub-fe'
 def branch = 'master'
 def images = 'adiwijayajy/wayshub-frontend:prod'
