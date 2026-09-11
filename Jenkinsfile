@@ -42,21 +42,5 @@ pipeline {
                 }
             }
         }
-
-    post {
-        success {
-            discordSend description: "Deployment menggunakan docker compose up -d untuk ${container} berhasil dilakukan ke server ${server}!",
-                        result: 'SUCCESS',
-                        webhookURL: "${env.DISCORD_WEBHOOK}",
-                        title: 'Jenkins Deployment Success'
-        }
-        failure {
-            discordSend description: "Deployment untuk ${container} gagal. Periksa kembali console output Jenkins.",
-                        result: 'FAILURE',
-                        webhookURL: "${env.DISCORD_WEBHOOK}",
-                        title: 'Jenkins Deployment Failed'
-        }
     }
 }
-}
-
