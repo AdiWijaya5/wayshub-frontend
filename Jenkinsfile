@@ -4,7 +4,7 @@ def dockerHubSecret = 'dockerhub-creds'
 def server = 'jenkins@54.251.210.57' 
 def directory = 'wayshub-frontend'
 def branch = 'main' 
-def images = 'adiwijayajy/wayshub-frontend:stage' 
+def images = 'adiwijayajy/wayshub-frontend:prod' 
 def container = 'wayshub-fe'
 
 pipeline {
@@ -34,6 +34,9 @@ pipeline {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     sh "docker push ${images}"
                 }
+                script {
+                    sendDiscordNotification(discordSecret, "📦 **Docker Hub Update!**\\nImage **${images}** successfully built and pushed to Docker Hub registry!", 16753920)
+            }
             }
         }
 
@@ -85,10 +88,3 @@ pipeline {
     }
 }
 
-def sendDiscordNotification(String credentialId, String text, int colorCode) {
-    withCredentials([string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK')]) {
-        def jsonPayload = "{\"embeds\": [{\"title\": \"Jenkins CI/CD Alert\", \"description\": \"${text}\", \"color\": ${colorCode}}]}"
-        echo "Mencoba mengirim notifikasi ke Discord..."
-        sh "curl -v -sS -H 'Content-Type: application/json' -X POST -d '${jsonPayload}' \$DISCORD_WEBHOOK"
-    }
-}
