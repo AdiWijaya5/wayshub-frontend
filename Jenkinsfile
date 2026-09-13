@@ -35,8 +35,8 @@ pipeline {
                     sh "docker push ${images}"
                 }
                 script {
-                    sendDiscordNotification(discordSecret, "📦 **Docker Hub Update!**\\nImage **${images}** successfully built and pushed to Docker Hub registry!", 16753920)
-            }
+                    sendDiscordNotification(discordSecret, '''📦 **Docker Hub Update!** Image **''' + images + '''** successfully built and pushed to Docker Hub registry!''', 16753920)
+                }
             }
         }
 
@@ -67,7 +67,7 @@ pipeline {
             script {
                 node {
                     try {
-                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success (STAGING)!**\\nContainer **${container}** successfully deployed via **Docker Compose** with tag `:stage`!\\nURL: https://studentdumbways.my.id", 3066993)
+                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success (STAGING)!**\\nContainer **${container}** successfully deployed via **Docker Compose** with tag `:stage`!\\nURL: https://adiwijaya.studentdumbways.my.id", 3066993)
                     } catch (Exception e) {
                         echo "Gagal mengirim notifikasi sukses ke Discord: ${e.message}"
                     }
