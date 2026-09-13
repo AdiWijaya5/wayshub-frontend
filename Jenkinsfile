@@ -44,10 +44,8 @@ pipeline {
             steps {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
-                    sh "ssh -o StrictHostKeyChecking=no ${server} 'mkdir -p ~/${directory}'"
-                    
-                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml"
-                    
+                    sh "ssh -o StrictHostKeyChecking=no ${server} 'mkdir -p ~/${directory}'"                    
+                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml"        
                     sh 'ssh -o StrictHostKeyChecking=no ' + server + ' "cd ~/' + directory + ' && docker compose pull && docker compose down || true && docker compose up -d && docker image prune -f"'
                 }
             }
