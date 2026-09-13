@@ -1,74 +1,100 @@
-def secret = 'key'
-def secret = 'adiwijaya_ky'
-def server = 'jenkins@54.251.210.57'
-def directory = 'wayshub-fe'
-def branch = 'master'
-def images = 'adiwijayajy/wayshub-frontend:prod'
+def secret = 'aws-ec2-ssh'          
+def discordSecret = 'discord-webhook-url' 
+def dockerHubSecret = 'dockerhub-creds'   
+def server = 'jenkins@54.251.210.57' 
+def directory = 'wayshub-frontend'
+def branch = 'main' 
+def images = 'adiwijayajy/wayshub-frontend:stage' 
 def container = 'wayshub-fe'
 
 pipeline {
     agent any
 
     stages {
-        stage('Pulling New Code') {
+        stage('Checkout') {
             steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    cd ${directory}
-                    git pull origin ${branch}
-                    exit
-                    EOF"""
+                checkout scm
+                script {
+                    sendDiscordNotification(discordSecret, "🔄 **CI/CD Started (STAGING)**\\nBuilding container via Docker Compose from branch **${branch}** (Build #${env.BUILD_NUMBER})", 3447003)
                 }
             }
         }
 
-        stage('Build Docker Image on Server') {
+        stage('Build Docker Image') {
             steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    cd ${directory}
-                    docker build -t ${images} .
-                    exit
-                    EOF"""
-                }
+                echo "Building Docker Image: ${images}..."
+                sh "docker build -t ${images} ."
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
-                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                echo "Logging into Docker Hub and pushing image..."
+                withCredentials([usernamePassword(credentialsId: dockerHubSecret, passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     sh "docker push ${images}"
                 }
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy to AWS EC2 via Compose') {
             steps {
-                sshagent(credentials: ["${secret}"]) {
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
-                    cd ${directory}
-                    docker compose down
-                    docker compose up -d
-                    exit
-                    EOF"""
+                echo "Deploying to server ${server} via Docker Compose..."
+                sshagent(["${secret}"]) {
+                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml || true"
+                    
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${server} '
+                        cd ~/${directory}
+                        docker compose pull
+                        docker compose down || true
+                        docker compose up -d
+                        docker image prune -f
+                    '
+                    """
                 }
+            }
+        }
+
+        stage('Cleanup Workspace') {
+            steps {
+                echo "Cleaning up local build assets and workspace..."
+                sh "docker rmi ${images} || true"
+                cleanWs()
             }
         }
     }
 
     post {
         success {
-            discordSend description: "Deployment menggunakan docker compose up -d untuk ${container} berhasil dilakukan ke server ${server}!",
-                        result: 'SUCCESS',
-                        webhookURL: "${env.DISCORD_WEBHOOK}",
-                        title: 'Jenkins Deployment Success'
+            script {
+                node {
+                    try {
+                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success (STAGING)!**\\nContainer **${container}** successfully deployed via **Docker Compose** with tag `:stage`!\\nURL: https://studentdumbways.my.id", 3066993)
+                    } catch (Exception e) {
+                        echo "Gagal mengirim notifikasi sukses ke Discord: ${e.message}"
+                    }
+                }
+            }
         }
         failure {
-            discordSend description: "Deployment untuk ${container} gagal. Periksa kembali console output Jenkins.",
-                        result: 'FAILURE',
-                        webhookURL: "${env.DISCORD_WEBHOOK}",
-                        title: 'Jenkins Deployment Failed'
+            script {
+                node {
+                    try {
+                        sendDiscordNotification(discordSecret, "❌ **CI/CD Failed (STAGING)!**\\nDeployment via Docker Compose failed (Build #${env.BUILD_NUMBER}).\\nSilakan periksa halaman Console Log Jenkins.", 15158332)
+                    } catch (Exception e) {
+                        echo "Gagal mengirim notifikasi gagal ke Discord: ${e.message}"
+                    }
+                }
+            }
         }
+    }
+}
+
+def sendDiscordNotification(String credentialId, String text, int colorCode) {
+    withCredentials([string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK')]) {
+        def jsonPayload = "{\"embeds\": [{\"title\": \"Jenkins CI/CD Alert\", \"description\": \"${text}\", \"color\": ${colorCode}}]}"
+        echo "Mencoba mengirim notifikasi ke Discord..."
+        sh "curl -v -sS -H 'Content-Type: application/json' -X POST -d '${jsonPayload}' \$DISCORD_WEBHOOK"
     }
 }
