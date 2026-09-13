@@ -1,17 +1,19 @@
 def secret = 'key'
+def secret = 'adiwijaya_ky'
 def server = 'jenkins@54.251.210.57'
-def directory = 'wayshub-ferontend'
+def directory = 'wayshub-fe'
 def branch = 'master'
 def images = 'adiwijayajy/wayshub-frontend:prod'
 def container = 'wayshub-fe'
 
 pipeline {
     agent any
+
     stages {
-        stage ('pulling new code'){
-            steps{
-                sshagent([secret]){
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
+        stage('Pulling New Code') {
+            steps {
+                sshagent(credentials: ["${secret}"]) {
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
                     cd ${directory}
                     git pull origin ${branch}
                     exit
@@ -19,21 +21,32 @@ pipeline {
                 }
             }
         }
-        stage ('Build Process'){
-            steps{
-                sshagent([secret]){
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
+
+        stage('Build Docker Image on Server') {
+            steps {
+                sshagent(credentials: ["${secret}"]) {
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
                     cd ${directory}
-                    docker build --no-cache -t ${image} .
+                    docker build -t ${images} .
                     exit
                     EOF"""
                 }
             }
         }
-        stage ('Deploy'){
-            steps{
-                sshagent([secret]){
-                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF 
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USER')]) {
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                    sh "docker push ${images}"
+                }
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                sshagent(credentials: ["${secret}"]) {
+                    sh """ssh -o StrictHostKeyChecking=no ${server} << EOF
                     cd ${directory}
                     docker compose down
                     docker compose up -d
@@ -42,6 +55,7 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
         success {
@@ -58,5 +72,3 @@ pipeline {
         }
     }
 }
-}
-
