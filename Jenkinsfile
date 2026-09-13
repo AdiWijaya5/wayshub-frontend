@@ -1,10 +1,10 @@
 // ====================================================================
-// 1. DEFINISI VARIABEL GLOBAL
+// 1. DEFINISI VARIABEL GLOBAL (User: jenkins)
 // ====================================================================
 def secret = 'aws-ec2-ssh'          
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
-def server = 'ubuntu@54.251.210.57' 
+def server = 'jenkins@54.251.210.57' // Menggunakan user jenkins Anda
 def directory = 'wayshub-frontend'
 def branch = 'master'
 def images = 'adiwijayajy/wayshub-frontend:prod' 
@@ -14,11 +14,17 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+        // Stage 1: Menghapus proteksi keamanan Git sebelum melakukan checkout
+        stage('Fix Git Permission & Checkout') {
             steps {
+                // Eksekusi izin Git global langsung di workspace server Jenkins
+                sh "git config --global --add safe.directory /var/jenkins/workspace/dumbways-frotend"
+                
+                // Melakukan penarikan kode setelah konfigurasi aman disuntikkan
                 checkout scm
+                
                 script {
-                    sendDiscordNotification(discordSecret, "🔄 **CI/CD Started**\\nBuilding container **${container}** from branch **${branch}** (Build #${env.BUILD_NUMBER})", 3447003)
+                    sendDiscordNotification(discordSecret, "🔄 **CI/CD Started**\\nBuilding container via Docker Compose from branch **${branch}** (Build #${env.BUILD_NUMBER})", 3447003)
                 }
             }
         }
@@ -40,16 +46,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to AWS EC2') {
+        stage('Deploy to AWS EC2 via Compose') {
             steps {
-                echo "Deploying to server ${server} via SSH..."
+                echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
+                    // Mentransfer file compose terbaru ke direktori server target
+                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml || true"
+                    
                     sh """
                     ssh -o StrictHostKeyChecking=no ${server} '
-                        docker pull ${images}
-                        docker stop ${container} || true
-                        docker rm ${container} || true
-                        docker run -d --name ${container} -p 3000:80 --restart always ${images}
+                        cd ~/${directory}
+                        docker compose pull
+                        docker compose down || true
+                        docker compose up -d
                         docker image prune -f
                     '
                     """
@@ -57,7 +66,6 @@ pipeline {
             }
         }
 
-        // PERBAIKAN UTAMA: Proses pembersihan dipindahkan ke dalam Stage normal
         stage('Cleanup Workspace') {
             steps {
                 echo "Cleaning up local build assets and workspace..."
@@ -68,24 +76,28 @@ pipeline {
     }
 
     // ====================================================================
-    // 2. BLOK POST-ACTIONS (Hanya Berisi Notifikasi Tanpa Perintah Shell Script)
+    // 2. BLOK POST-ACTIONS GLOBAL (Dibungkus dengan node {} agar aman dari error)
     // ====================================================================
     post {
         success {
             script {
-                try {
-                    sendDiscordNotification(discordSecret, "✅ **CI/CD Success!**\\nContainer **${container}** successfully built, pushed to Docker Hub, and deployed to **${server}**!\\nURL: https://studentdumbways.my.id", 3066993)
-                } catch (Exception e) {
-                    echo "Gagal mengirim notifikasi sukses ke Discord: ${e.message}"
+                node {
+                    try {
+                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success!**\\nContainer successfully deployed via **Docker Compose** to **${server}**!\\nURL: https://studentdumbways.my.id", 3066993)
+                    } catch (Exception e) {
+                        echo "Gagal mengirim notifikasi sukses ke Discord: ${e.message}"
+                    }
                 }
             }
         }
         failure {
             script {
-                try {
-                    sendDiscordNotification(discordSecret, "❌ **CI/CD Failed!**\\nDeployment failed for container **${container}** (Build #${env.BUILD_NUMBER}).\\nSilakan periksa halaman Console Log Jenkins untuk melihat detail error.", 15158332)
-                } catch (Exception e) {
-                    echo "Gagal mengirim notifikasi gagal ke Discord: ${e.message}"
+                node {
+                    try {
+                        sendDiscordNotification(discordSecret, "❌ **CI/CD Failed!**\\nDeployment via Docker Compose failed (Build #${env.BUILD_NUMBER}).\\nSilakan periksa halaman Console Log Jenkins.", 15158332)
+                    } catch (Exception e) {
+                        echo "Gagal mengirim notifikasi gagal ke Discord: ${e.message}"
+                    }
                 }
             }
         }
