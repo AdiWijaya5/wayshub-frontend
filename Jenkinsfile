@@ -1,6 +1,3 @@
-// ====================================================================
-// 1. DEFINISI VARIABEL GLOBAL (User: jenkins)
-// ====================================================================
 def secret = 'aws-ec2-ssh'          
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
@@ -17,9 +14,6 @@ pipeline {
         // Stage 1: Menghapus proteksi keamanan Git sebelum melakukan checkout
         stage('Fix Git Permission & Checkout') {
             steps {
-                // Eksekusi izin Git global langsung di workspace server Jenkins
-                sh "git config --global --add safe.directory /var/jenkins/workspace/dumbways-frotend"
-                
                 // Melakukan penarikan kode setelah konfigurasi aman disuntikkan
                 checkout scm
                 
