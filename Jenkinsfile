@@ -37,21 +37,15 @@ pipeline {
             }
         }
 
-        stage('Deploy to AWS EC2 via Compose') {
+    stage('Deploy to AWS EC2 via Compose') {
             steps {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
-                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml || true"
+                    sh "ssh -o StrictHostKeyChecking=no ${server} 'mkdir -p ~/${directory}'"
                     
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ${server} '
-                        cd ~/${directory}
-                        docker compose pull
-                        docker compose down || true
-                        docker compose up -d
-                        docker image prune -f
-                    '
-                    """
+                    sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml"
+                    
+                    sh 'ssh -o StrictHostKeyChecking=no ' + server + ' "cd ~/' + directory + ' && docker compose pull && docker compose down || true && docker compose up -d && docker image prune -f"'
                 }
             }
         }
