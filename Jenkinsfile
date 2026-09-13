@@ -1,22 +1,20 @@
 def secret = 'aws-ec2-ssh'          
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
-def server = 'jenkins@54.251.210.57' // Menggunakan user jenkins Anda
+def server = 'jenkins@54.251.210.57' // Menggunakan user SSH jenkins Anda
 def directory = 'wayshub-frontend'
 def branch = 'master'
-def images = 'adiwijayajy/wayshub-frontend:prod' 
+def images = 'adiwijayajy/wayshub-frontend:latest' 
 def container = 'wayshub-fe'
 
 pipeline {
     agent any
 
     stages {
-        // Stage 1: Menghapus proteksi keamanan Git sebelum melakukan checkout
-        stage('Fix Git Permission & Checkout') {
+        stage('Checkout') {
             steps {
-                // Melakukan penarikan kode setelah konfigurasi aman disuntikkan
+                // Melakukan penarikan kode secara aman
                 checkout scm
-                
                 script {
                     sendDiscordNotification(discordSecret, "🔄 **CI/CD Started**\\nBuilding container via Docker Compose from branch **${branch}** (Build #${env.BUILD_NUMBER})", 3447003)
                 }
@@ -44,7 +42,7 @@ pipeline {
             steps {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
-                    // Mentransfer file compose terbaru ke direktori server target
+                    // Berhasil mengirimkan file compose dengan scm context yang aman
                     sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml || true"
                     
                     sh """
@@ -69,9 +67,6 @@ pipeline {
         }
     }
 
-    // ====================================================================
-    // 2. BLOK POST-ACTIONS GLOBAL (Dibungkus dengan node {} agar aman dari error)
-    // ====================================================================
     post {
         success {
             script {
@@ -98,9 +93,6 @@ pipeline {
     }
 }
 
-// ====================================================================
-// 3. FUNGSI PEMBANTU (Helper Function) DISCORD NOTIFICATION
-// ====================================================================
 def sendDiscordNotification(String credentialId, String text, int colorCode) {
     withCredentials([string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK')]) {
         def jsonPayload = "{\"embeds\": [{\"title\": \"Jenkins CI/CD Alert\", \"description\": \"${text}\", \"color\": ${colorCode}}]}"
