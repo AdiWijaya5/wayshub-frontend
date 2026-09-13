@@ -1,6 +1,4 @@
-def secret = 'key'
-
-def dockerHubSecret = 'aws-ec2-ssh'
+def Secret = 'aws-ec2-ssh'
 def discordSecret = 'discord-webhook-url'
 def dockerHubSecret = 'dockerhub-creds'
 def server = 'jenkins@54.251.210.57'
