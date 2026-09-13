@@ -88,3 +88,10 @@ pipeline {
     }
 }
 
+def sendDiscordNotification(String credentialId, String text, int colorCode) {
+    withCredentials([string(credentialsId: credentialId, variable: 'DISCORD_WEBHOOK')]) {
+        def jsonPayload = "{\"embeds\": [{\"title\": \"Jenkins CI/CD Alert\", \"description\": \"${text}\", \"color\": ${colorCode}}]}"
+        sh "curl -v -sS -H 'Content-Type: application/json' -X POST -d '${jsonPayload}' \$DISCORD_WEBHOOK"
+    }
+}
+
