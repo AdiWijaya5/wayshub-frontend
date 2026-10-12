@@ -4,7 +4,8 @@ def dockerHubSecret = 'dockerhub-creds'
 def server = '108.136.243.210' 
 def directory = 'wayshub-frontend'
 def branch = 'main' 
-def images = 'adiwijayajy/wayshub-frontend:prod' 
+def images = 'adiwijayajy/wayshub-frontend:prod'
+def docker_user = 'adiwijayajy'
 def container = 'wayshub-fe'
 
 pipeline {
@@ -23,7 +24,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker Image: ${images}..."
-                sh "docker build -t ${images} -f Dockerfile ."
+                sh "docker build -t ${docker_user}/wayshub-frontend:prod -f Dockerfile ."
             }
         }
 
