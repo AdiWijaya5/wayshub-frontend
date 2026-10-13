@@ -50,7 +50,7 @@ pipeline {
             steps {
                 echo "Deploying locally via Docker Compose..."
                 sh """
-                    cd ~/wayshub-frontend
+                    cd /home/adi/wayshub-frontend
                     docker compose pull
                     docker compose down || true
                     docker compose up -d
