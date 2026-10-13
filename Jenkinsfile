@@ -1,7 +1,8 @@
 def secret = 'aws-ec2-ssh'          
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
-def server = 'jenkins@54.251.210.57' // Menggunakan user SSH jenkins Anda
+def server = 'jenkins@108.136.243.210'
+// def server = 'jenkins@54.251.210.57' // Menggunakan user SSH jenkins Anda
 def directory = 'wayshub-frontend'
 def branch = 'master'
 def images = 'adiwijayajy/wayshub-frontend:latest' 
@@ -13,7 +14,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Melakukan penarikan kode secara aman
                 checkout scm
                 script {
                     sendDiscordNotification(discordSecret, "🔄 **CI/CD Started**\\nBuilding container via Docker Compose from branch **${branch}** (Build #${env.BUILD_NUMBER})", 3447003)
@@ -25,6 +25,14 @@ pipeline {
             steps {
                 echo "Building Docker Image: ${images}..."
                 sh "docker build -t ${images} ."
+            }
+        }
+
+        stage('Security Scan (Trivy)') {
+            steps {
+                echo "Scanning Docker image for vulnerabilities using Trivy..."
+                // Menggunakan Trivy untuk memindai image, exit-code 0 jika ingin melanjutkan atau 1 jika ingin menggagalkan build jika ada critical vulnerability
+                sh "trivy image --severity HIGH,CRITICAL --exit-code 0 ${images}"
             }
         }
 
@@ -42,7 +50,6 @@ pipeline {
             steps {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
-                    // Berhasil mengirimkan file compose dengan scm context yang aman
                     sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${server}:~/${directory}/docker-compose.yaml || true"
                     
                     sh """
