@@ -2,6 +2,7 @@ def secret = 'aws-ec2-ssh'
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
 def server = 'jenkins@108.136.243.210'
+def server_user = 'adi'
 // def server = 'jenkins@54.251.210.57' // Menggunakan user SSH jenkins Anda
 def directory = 'wayshub-frontend'
 def branch = 'master'
@@ -46,16 +47,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to Local Server via Compose') {
+        stage('Deploy to AWS EC2') {
             steps {
-                echo "Deploying locally via Docker Compose..."
-                sh """
-                    cd /home/adi/wayshub-frontend
-                    docker compose pull
-                    docker compose down || true
-                    docker compose up -d
-                    docker image prune -f
-                """
+                echo "Deploying to server ${server} via Docker Compose..."
+                sshagent(["${secret}"]) {
+                    sh """
+                        sh "ssh -p 22 -o StrictHostKeyChecking=no ${app_}@${server} "\
+                        docker login -u adiwijayajy --password-stdin && \
+                        docker pull ${images} && \
+                        docker stop fe-wayshub || true && \
+                        docker rm fe-wayshub || true && \
+                        docker run -d --name fe-wayshub -p 3000:3000 ${images}"
+                    """
+                }
             }
         }
 
