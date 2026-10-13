@@ -1,7 +1,7 @@
 def secret = 'aws-ec2-ssh'          
 def discordSecret = 'discord-webhook-url' 
 def dockerHubSecret = 'dockerhub-creds'   
-def server = 'jenkins@108.136.243.210'
+def server = '108.136.243.210'
 def server_user = 'adi'
 // def server = 'jenkins@54.251.210.57' // Menggunakan user SSH jenkins Anda
 def directory = 'wayshub-frontend'
