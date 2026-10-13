@@ -52,7 +52,7 @@ pipeline {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
                     sh """
-                        sh "ssh -p 22 -o StrictHostKeyChecking=no ${app_}@${server} "\
+                        sh "ssh -o StrictHostKeyChecking=no ${server_user}@${server} "\
                         docker login -u adiwijayajy --password-stdin && \
                         docker pull ${images} && \
                         docker stop fe-wayshub || true && \
