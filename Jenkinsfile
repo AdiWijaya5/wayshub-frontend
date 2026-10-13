@@ -24,7 +24,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker Image"
-                app = docker.build("deploy/wayshub-frontend:prod")
+                sh "docker build -t ${docker_name}/fe-dumbmerch:prod -f Dockerfile ."
             }
         }
 
