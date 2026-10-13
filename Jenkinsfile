@@ -49,15 +49,16 @@ pipeline {
 
         stage('Deploy to AWS EC2') {
             steps {
-                echo "Deploying to server ${server} via Docker Compose..."
+                echo "Deploying via SSH to AWS EC2..."
                 sshagent(["${secret}"]) {
                     sh """
-                        sh "ssh -o StrictHostKeyChecking=no ${server_user}@${server} "\
-                        docker login -u adiwijayajy --password-stdin && \
-                        docker pull ${images} && \
-                        docker stop fe-wayshub || true && \
-                        docker rm fe-wayshub || true && \
-                        docker run -d --name fe-wayshub -p 3000:3000 ${images}"
+                        ssh -o StrictHostKeyChecking=no adi@108.136.243.210 '
+                            docker login -u adiwijayajy -p DOCKER_PASSWORD_ANDA &&
+                            docker pull adiwijayajy/wayshub-frontend:latest &&
+                            docker stop wayshub-fe || true &&
+                            docker rm wayshub-fe || true &&
+                            docker run -d --name wayshub-fe -p 3000:3000 adiwijayajy/wayshub-frontend:latest
+                        '
                     """
                 }
             }
