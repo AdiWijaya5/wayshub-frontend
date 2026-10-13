@@ -52,7 +52,7 @@ pipeline {
                 echo "Deploying via SSH to AWS EC2..."
                 sshagent(["${secret}"]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no adi@108.136.243.210 '
+                        ssh -p 22 -o StrictHostKeyChecking=no adi@108.136.243.210 '
                             docker login -u adiwijayajy --password-stdin &&\
                             docker pull adiwijayajy/wayshub-frontend:latest &&\
                             docker stop wayshub-fe || true &&\
