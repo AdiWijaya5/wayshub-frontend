@@ -46,7 +46,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to AWS EC2 via Compose') {
+        stage('Deploy to AWS EC2') {
             steps {
                 echo "Deploying to server ${server} via Docker Compose..."
                 sshagent(["${secret}"]) {
