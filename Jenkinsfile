@@ -53,12 +53,12 @@ pipeline {
                 sshagent(["${secret}"]) {
                     sh """
                         ssh -o StrictHostKeyChecking=no adi@108.136.243.210 '
-                            docker login -u adiwijayajy -p DOCKER_PASSWORD_ANDA &&
-                            docker pull adiwijayajy/wayshub-frontend:latest &&
-                            docker stop wayshub-fe || true &&
-                            docker rm wayshub-fe || true &&
+                            docker login -u adiwijayajy --password-stdin &&\
+                            docker pull adiwijayajy/wayshub-frontend:latest &&\
+                            docker stop wayshub-fe || true &&\
+                            docker rm wayshub-fe || true &&\
                             docker run -d --name wayshub-fe -p 3000:3000 adiwijayajy/wayshub-frontend:latest
-                        '
+                            '
                     """
                 }
             }
