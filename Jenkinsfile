@@ -25,7 +25,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker Image: ${images}..."
-                sh "docker build -t ${images} ."
+               // sh "docker build -t ${images} ."
             }
         }
 
@@ -42,7 +42,7 @@ pipeline {
                 echo "Logging into Docker Hub and pushing image..."
                 withCredentials([string(credentialsId: dockerHubSecret, variable: 'DOCKER_PASS')]) {
                     sh "echo \$DOCKER_PASS | docker login -u adiwijayajy --password-stdin"
-                    sh "docker push ${images}"
+                   // sh "docker push ${images}"
                 }
             }
         }
