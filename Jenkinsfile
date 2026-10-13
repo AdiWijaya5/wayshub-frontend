@@ -21,10 +21,12 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Building Docker Image') {
             steps {
-                echo "Building Docker Image"
-                sh "docker build -t ${docker_name}/fe-dumbmerch:prod -f Dockerfile ."
+                script {
+                    // Menggunakan fungsi bawaan plugin Docker Jenkins
+                    app = docker.build("deploy/fe-dumbmerch:prod", "-f Dockerfile .")
+                }
             }
         }
 
