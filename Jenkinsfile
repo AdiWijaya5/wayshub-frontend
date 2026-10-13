@@ -78,7 +78,7 @@ pipeline {
             script {
                 node {
                     try {
-                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success!**\\nContainer successfully deployed via **Docker Compose** to **${server}**!\\nURL: https://studentdumbways.my.id", 3066993)
+                        sendDiscordNotification(discordSecret, "✅ **CI/CD Success!**\\nContainer successfully deployed to **${server}**!\\nURL: https://adi.studentdumbways.my.id", 3066993)
                     } catch (Exception e) {
                         echo "Gagal mengirim notifikasi sukses ke Discord: ${e.message}"
                     }
